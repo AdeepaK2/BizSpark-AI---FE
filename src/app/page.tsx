@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import Image from "next/image"
 import { Zap, ArrowRight, CheckCircle2, Globe, Share2, Sparkles, Layout } from "lucide-react"
