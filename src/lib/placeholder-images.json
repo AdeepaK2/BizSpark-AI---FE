@@ -1,3 +1,22 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-image",
+      "description": "Professional small business owner working in a modern store",
+      "imageUrl": "https://picsum.photos/seed/biz1/1200/800",
+      "imageHint": "small business store"
+    },
+    {
+      "id": "website-preview",
+      "description": "Modern responsive website layout",
+      "imageUrl": "https://picsum.photos/seed/webpreview/800/600",
+      "imageHint": "modern website"
+    },
+    {
+      "id": "dashboard-mockup",
+      "description": "SaaS analytics dashboard overview",
+      "imageUrl": "https://picsum.photos/seed/dash/800/600",
+      "imageHint": "saas dashboard"
+    }
+  ]
 }
