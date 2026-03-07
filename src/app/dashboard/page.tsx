@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -7,7 +8,6 @@ import {
   Eye, 
   ArrowUpRight, 
   TrendingUp, 
-  CheckCircle2,
   Calendar,
   Sparkles
 } from "lucide-react"
@@ -17,19 +17,23 @@ import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
 
 export default function DashboardOverview() {
-  const [bizName, setBizName] = useState("Your Business")
+  const [activeBiz, setActiveBiz] = useState<any>(null)
 
   useEffect(() => {
-    const stored = localStorage.getItem("biz_name")
-    if (stored) setBizName(stored)
+    const list = JSON.parse(localStorage.getItem("biz_list") || "[]")
+    const activeId = localStorage.getItem("active_biz_id")
+    const current = list.find((b: any) => b.id === activeId)
+    if (current) setActiveBiz(current)
   }, [])
+
+  if (!activeBiz) return null
 
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold font-headline">Welcome back, {bizName}!</h2>
-          <p className="text-muted-foreground mt-1 text-lg">Here's how your online presence is performing.</p>
+          <h2 className="text-3xl font-bold font-headline">Welcome back, {activeBiz.name}!</h2>
+          <p className="text-muted-foreground mt-1 text-lg">Here's how {activeBiz.name} is performing today.</p>
         </div>
         <Button className="bg-primary hover:bg-primary/90 gap-2">
           <Sparkles size={16} /> New AI Post
@@ -69,7 +73,7 @@ export default function DashboardOverview() {
               <div className="flex items-center gap-3">
                 <Globe className="text-primary" />
                 <div>
-                  <p className="font-bold text-sm">Main Site: {bizName.toLowerCase().replace(/\s/g, "")}.bizspark.ai</p>
+                  <p className="font-bold text-sm">Main Site: {activeBiz.name.toLowerCase().replace(/\s/g, "")}.bizspark.ai</p>
                   <p className="text-xs text-muted-foreground">Last updated: 2 hours ago</p>
                 </div>
               </div>
@@ -98,9 +102,9 @@ export default function DashboardOverview() {
           </CardHeader>
           <CardContent className="space-y-4">
             {[
-              { type: "Instagram", title: "Announcing our new summer menu!", date: "Drafted 10m ago" },
-              { type: "Facebook", title: "Join us this Friday for a special event.", date: "Drafted 1h ago" },
-              { type: "Twitter", title: "We're expanding our delivery zone!", date: "Drafted 3h ago" },
+              { type: "Instagram", title: "Check out our latest update!", date: "Drafted 10m ago" },
+              { type: "Facebook", title: "Join us this Friday!", date: "Drafted 1h ago" },
+              { type: "Twitter", title: "Exciting news coming soon...", date: "Drafted 3h ago" },
             ].map((post, i) => (
               <div key={i} className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 transition-colors cursor-pointer group">
                 <div className="flex items-center gap-3">

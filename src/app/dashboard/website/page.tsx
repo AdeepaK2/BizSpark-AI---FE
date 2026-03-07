@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -8,22 +9,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 
 export default function WebsiteManagement() {
-  const [html, setHtml] = useState("")
+  const [activeBiz, setActiveBiz] = useState<any>(null)
   const [view, setView] = useState("desktop")
   const [isPublishing, setIsPublishing] = useState(false)
   const [isPublished, setIsPublished] = useState(true)
 
   useEffect(() => {
-    const stored = localStorage.getItem("biz_website_html")
-    if (stored) {
-      setHtml(stored)
+    const list = JSON.parse(localStorage.getItem("biz_list") || "[]")
+    const activeId = localStorage.getItem("active_biz_id")
+    const current = list.find((b: any) => b.id === activeId)
+    if (current) {
+      setActiveBiz(current)
     } else {
-      setHtml(`
-        <div style="font-family: sans-serif; padding: 40px; text-align: center;">
-          <h1>No website generated yet.</h1>
-          <p>Please complete the setup wizard to generate your first site.</p>
-        </div>
-      `)
+      setActiveBiz({
+        name: "My Business",
+        html: `<div style="padding: 40px; text-align: center;"><h1>No website found.</h1></div>`
+      })
     }
   }, [])
 
@@ -35,12 +36,14 @@ export default function WebsiteManagement() {
     }, 1500)
   }
 
+  if (!activeBiz) return null
+
   return (
     <div className="h-full flex flex-col space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold font-headline">My Website</h2>
-          <p className="text-muted-foreground mt-1">Preview and manage your AI-generated online storefront.</p>
+          <p className="text-muted-foreground mt-1">Manage the online presence for {activeBiz.name}.</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" className="gap-2">
@@ -67,7 +70,7 @@ export default function WebsiteManagement() {
                   <div className="size-3 rounded-full bg-green-400"></div>
                 </div>
                 <div className="bg-white px-3 py-1 rounded text-xs text-muted-foreground border flex items-center gap-2 min-w-[240px]">
-                  <Globe size={12} /> preview.bizspark.ai/my-business
+                  <Globe size={12} /> {activeBiz.name.toLowerCase().replace(/\s/g, "")}.bizspark.ai
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -89,8 +92,8 @@ export default function WebsiteManagement() {
                 style={{ minHeight: "100%" }}
               >
                 <iframe 
-                  srcDoc={html} 
-                  className="w-full h-full border-none pointer-events-none"
+                  srcDoc={activeBiz.html} 
+                  className="w-full h-full border-none"
                   style={{ minHeight: "800px" }}
                 />
               </div>
@@ -101,46 +104,27 @@ export default function WebsiteManagement() {
         <div className="col-span-12 lg:col-span-4 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Website Configuration</CardTitle>
-              <CardDescription>Customize how your site appears online.</CardDescription>
+              <CardTitle>Configuration</CardTitle>
+              <CardDescription>Site details for {activeBiz.name}.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Site Title</label>
-                <input className="w-full p-2 border rounded-md text-sm" defaultValue="Sunny Morning Bakery" />
+                <input className="w-full p-2 border rounded-md text-sm" defaultValue={activeBiz.name} />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Domain</label>
+                <label className="text-sm font-medium">Subdomain</label>
                 <div className="flex gap-2">
                   <div className="flex-1 p-2 border bg-slate-50 rounded-md text-sm text-muted-foreground truncate">
-                    sunnymorning.bizspark.ai
+                    {activeBiz.name.toLowerCase().replace(/\s/g, "")}.bizspark.ai
                   </div>
-                  <Button variant="outline" size="sm">Change</Button>
                 </div>
               </div>
               <div className="pt-4 border-t">
                 <Button className="w-full bg-primary/10 text-primary hover:bg-primary hover:text-white border-primary/20">
-                  <Sparkles size={16} className="mr-2" /> AI Editor Assistant
+                  <Sparkles size={16} className="mr-2" /> AI Assistant
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Analytics Highlights</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                { label: "Bounces", value: "12%" },
-                { label: "Avg. Session", value: "2m 14s" },
-                { label: "Conv. Rate", value: "3.2%" }
-              ].map((m, i) => (
-                <div key={i} className="flex justify-between items-center text-sm border-b pb-2 last:border-0">
-                  <span className="text-muted-foreground">{m.label}</span>
-                  <span className="font-bold">{m.value}</span>
-                </div>
-              ))}
             </CardContent>
           </Card>
         </div>
