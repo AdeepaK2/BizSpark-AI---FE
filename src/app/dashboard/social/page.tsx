@@ -1,17 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { 
   Instagram, 
   Facebook, 
   Twitter, 
   Share2, 
   Plus, 
-  CheckCircle2, 
   Clock, 
   Calendar,
   AlertCircle,
-  MoreVertical,
   Trash2,
   Edit3,
   ImageIcon,
@@ -20,7 +18,12 @@ import {
   TrendingUp,
   MessageSquare,
   Heart,
-  Sparkles
+  Sparkles,
+  CheckCircle2,
+  MoreVertical,
+  Image as ImageIconLucide,
+  PlusCircle,
+  X
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -28,6 +31,16 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 
@@ -43,6 +56,7 @@ interface SocialPost {
   platform: string
   content: string
   imageUrl: string
+  additionalImages?: string[]
   status: "Posted" | "Scheduled" | "Draft"
   date: string
   engagement?: { likes: string, comments: string }
@@ -51,6 +65,7 @@ interface SocialPost {
 export default function SocialMediaPage() {
   const { toast } = useToast()
   const [selectedPlatformId, setSelectedPlatformId] = useState<string | null>(null)
+  const [editingPost, setEditingPost] = useState<SocialPost | null>(null)
   const [posts, setPosts] = useState<SocialPost[]>([
     { 
       id: "p1", 
@@ -66,6 +81,7 @@ export default function SocialMediaPage() {
       platform: "instagram", 
       content: "Meet the team! Our bakers start at 3 AM to ensure your coffee has the perfect companion. ☕🥐",
       imageUrl: "https://picsum.photos/seed/post2/600/600",
+      additionalImages: ["https://picsum.photos/seed/post2b/600/600"],
       status: "Posted",
       date: "Yesterday",
       engagement: { likes: "89", comments: "5" }
@@ -92,7 +108,8 @@ export default function SocialMediaPage() {
   const selectedPlatform = PLATFORMS.find(p => p.id === selectedPlatformId)
   const filteredPosts = posts.filter(p => p.platform === selectedPlatformId)
 
-  const handleDeletePost = (id: string) => {
+  const handleDeletePost = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
     setPosts(posts.filter(p => p.id !== id))
     toast({
       title: "Post Removed",
@@ -100,13 +117,37 @@ export default function SocialMediaPage() {
     })
   }
 
-  const handleChangeImage = (id: string) => {
+  const handleChangeImage = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
     const newUrl = `https://picsum.photos/seed/${Math.random()}/600/600`
     setPosts(posts.map(p => p.id === id ? { ...p, imageUrl: newUrl } : p))
     toast({
       title: "Image Updated",
       description: "AI has swapped the post image for a new variation.",
     })
+  }
+
+  const handleSaveEdit = () => {
+    if (!editingPost) return
+    setPosts(posts.map(p => p.id === editingPost.id ? editingPost : p))
+    setEditingPost(null)
+    toast({
+      title: "Changes Saved",
+      description: "The post has been updated across all channels.",
+    })
+  }
+
+  const addAdditionalImage = () => {
+    if (!editingPost) return
+    const newImages = [...(editingPost.additionalImages || []), `https://picsum.photos/seed/${Math.random()}/600/600`]
+    setEditingPost({ ...editingPost, additionalImages: newImages })
+  }
+
+  const removeAdditionalImage = (index: number) => {
+    if (!editingPost) return
+    const newImages = [...(editingPost.additionalImages || [])]
+    newImages.splice(index, 1)
+    setEditingPost({ ...editingPost, additionalImages: newImages })
   }
 
   if (selectedPlatformId && selectedPlatform) {
@@ -149,15 +190,24 @@ export default function SocialMediaPage() {
                     </div>
                   ) : (
                     filteredPosts.map((post) => (
-                      <Card key={post.id} className="overflow-hidden border-2 hover:border-primary/20 transition-all group">
+                      <Card 
+                        key={post.id} 
+                        className="overflow-hidden border-2 hover:border-primary/20 transition-all group cursor-pointer"
+                        onClick={() => setEditingPost(post)}
+                      >
                         <div className="flex flex-col md:flex-row">
                           <div className="w-full md:w-48 h-48 relative overflow-hidden bg-slate-100 border-r">
                             <img src={post.imageUrl} alt="Post content" className="w-full h-full object-cover" />
+                            {post.additionalImages && post.additionalImages.length > 0 && (
+                              <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <ImageIconLucide size={10} /> +{post.additionalImages.length}
+                              </div>
+                            )}
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                              <Button size="icon" variant="secondary" className="size-8 rounded-full" onClick={() => handleChangeImage(post.id)}>
+                              <Button size="icon" variant="secondary" className="size-8 rounded-full" onClick={(e) => handleChangeImage(post.id, e)}>
                                 <Edit3 size={14} />
                               </Button>
-                              <Button size="icon" variant="destructive" className="size-8 rounded-full" onClick={() => handleDeletePost(post.id)}>
+                              <Button size="icon" variant="destructive" className="size-8 rounded-full" onClick={(e) => handleDeletePost(post.id, e)}>
                                 <Trash2 size={14} />
                               </Button>
                             </div>
@@ -259,6 +309,94 @@ export default function SocialMediaPage() {
             </div>
           </div>
         </div>
+
+        {/* Edit Post Dialog */}
+        <Dialog open={!!editingPost} onOpenChange={(open) => !open && setEditingPost(null)}>
+          <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+            {editingPost && (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Edit3 size={18} className="text-primary" />
+                    Edit {selectedPlatform.name} Post
+                  </DialogTitle>
+                  <DialogDescription>
+                    Review and customize your AI-generated content before it goes live.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="grid gap-6 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="caption" className="font-bold text-sm">Caption</Label>
+                    <Textarea 
+                      id="caption"
+                      value={editingPost.content}
+                      onChange={(e) => setEditingPost({ ...editingPost, content: e.target.value })}
+                      className="min-h-[120px] text-sm leading-relaxed"
+                      placeholder="Write your engaging caption here..."
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label className="font-bold text-sm">Post Media</Label>
+                      {selectedPlatform.id === "instagram" && (
+                        <Button variant="ghost" size="sm" onClick={addAdditionalImage} className="text-primary h-8 gap-1.5">
+                          <PlusCircle size={14} /> Add Carousel Image
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {/* Main Image */}
+                      <div className="relative aspect-square rounded-xl overflow-hidden border-2 border-primary/20 group">
+                        <img src={editingPost.imageUrl} alt="Main" className="w-full h-full object-cover" />
+                        <div className="absolute top-2 left-2 bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">Main</div>
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Button variant="secondary" size="sm" className="h-7 text-[10px]" onClick={() => setEditingPost({ ...editingPost, imageUrl: `https://picsum.photos/seed/${Math.random()}/600/600` })}>Swap AI</Button>
+                        </div>
+                      </div>
+
+                      {/* Additional Carousel Images */}
+                      {editingPost.additionalImages?.map((img, idx) => (
+                        <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border group">
+                          <img src={img} alt={`Carousel ${idx}`} className="w-full h-full object-cover" />
+                          <Button 
+                            variant="destructive" 
+                            size="icon" 
+                            className="absolute top-1 right-1 size-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => removeAdditionalImage(idx)}
+                          >
+                            <X size={12} />
+                          </Button>
+                        </div>
+                      ))}
+
+                      {/* Add Placeholder for Carousel */}
+                      {selectedPlatform.id === "instagram" && (!editingPost.additionalImages || editingPost.additionalImages.length < 9) && (
+                        <button 
+                          onClick={addAdditionalImage}
+                          className="aspect-square rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center text-muted-foreground hover:bg-slate-100 hover:border-primary/20 transition-all"
+                        >
+                          <Plus size={20} />
+                          <span className="text-[10px] mt-1 font-medium">Add to Carousel</span>
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground italic">
+                      {selectedPlatform.id === "instagram" ? "Supports up to 10 images as a carousel." : "This platform currently supports a single primary image."}
+                    </p>
+                  </div>
+                </div>
+
+                <DialogFooter className="flex gap-2">
+                  <Button variant="ghost" onClick={() => setEditingPost(null)} className="flex-1">Discard Changes</Button>
+                  <Button onClick={handleSaveEdit} className="flex-1 bg-primary">Save & Ready to Post</Button>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     )
   }
