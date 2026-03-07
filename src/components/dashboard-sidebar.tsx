@@ -1,4 +1,3 @@
-
 "use client"
 
 import Link from "next/link"
@@ -11,7 +10,8 @@ import {
   Package, 
   Settings, 
   Zap,
-  Building2
+  Building2,
+  Sparkles
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -40,7 +40,7 @@ export function DashboardSidebar() {
   useEffect(() => {
     const list = JSON.parse(localStorage.getItem("biz_list") || "[]")
     const activeId = localStorage.getItem("active_biz_id")
-    const current = list.find((b: any) => b.id === activeId)
+    const current = list.find((b: any) => b.id === activeId) || list[0]
     if (current) setActiveName(current.name)
   }, [])
 
@@ -48,11 +48,11 @@ export function DashboardSidebar() {
     <Sidebar variant="inset" collapsible="icon">
       <SidebarHeader className="h-16 flex items-center px-4 overflow-hidden">
         <Link href="/" className="flex items-center gap-3 font-bold text-xl text-primary">
-          <div className="bg-primary p-1 rounded-lg">
+          <div className="bg-primary p-1.5 rounded-lg shadow-sm shadow-primary/30">
             <Zap className="fill-white text-white" size={18} />
           </div>
-          <span className="truncate group-data-[collapsible=icon]:hidden">
-            {activeName}
+          <span className="truncate group-data-[collapsible=icon]:hidden font-headline tracking-tight">
+            BizSpark AI
           </span>
         </Link>
       </SidebarHeader>
@@ -65,9 +65,13 @@ export function DashboardSidebar() {
                 asChild 
                 isActive={pathname === item.href}
                 tooltip={item.label}
+                className={cn(
+                  "h-11 transition-all",
+                  pathname === item.href ? "bg-primary/10 text-primary font-bold" : "hover:bg-slate-100"
+                )}
               >
                 <Link href={item.href}>
-                  <item.icon className="size-5" />
+                  <item.icon className={cn("size-5", pathname === item.href && "text-primary")} />
                   <span>{item.label}</span>
                 </Link>
               </SidebarMenuButton>
@@ -76,14 +80,14 @@ export function DashboardSidebar() {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-4">
-        <div className="bg-slate-50 border rounded-lg p-4 group-data-[collapsible=icon]:hidden">
+        <div className="bg-white border rounded-xl p-4 group-data-[collapsible=icon]:hidden shadow-sm">
           <div className="flex items-center gap-2 mb-2 text-primary">
-            <Building2 size={14} />
-            <p className="text-[10px] font-bold uppercase tracking-wider">Business Mode</p>
+            <Sparkles size={14} className="animate-pulse" />
+            <p className="text-[10px] font-bold uppercase tracking-wider">AI Assistant Ready</p>
           </div>
-          <p className="text-xs text-muted-foreground mb-3 leading-relaxed">You are managing {activeName}.</p>
-          <button className="w-full py-2 bg-primary text-white text-xs font-bold rounded-md hover:bg-primary/90 transition-all shadow-sm shadow-primary/20">
-            Pro Active
+          <p className="text-xs text-muted-foreground mb-3 leading-relaxed">Managing <strong>{activeName}</strong>. Upgrade to unlock Veo-3 video generation.</p>
+          <button className="w-full py-2 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-all shadow-lg shadow-slate-200">
+            Go Premium
           </button>
         </div>
       </SidebarFooter>

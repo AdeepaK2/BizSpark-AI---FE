@@ -20,6 +20,15 @@ export default function LoginPage() {
     password: ""
   })
 
+  const performLoginRedirect = () => {
+    const list = JSON.parse(localStorage.getItem("biz_list") || "[]")
+    if (list.length === 0) {
+      router.push("/setup")
+    } else {
+      router.push("/dashboard")
+    }
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.email || !formData.password) {
@@ -33,7 +42,7 @@ export default function LoginPage() {
 
     setIsLoading(true)
     // Simulate authentication
-    await new Promise(resolve => setTimeout(resolve, 1200))
+    await new Promise(resolve => setTimeout(resolve, 1000))
     
     setIsLoading(false)
     toast({
@@ -41,14 +50,13 @@ export default function LoginPage() {
       description: "Welcome back to BizSpark AI!"
     })
     
-    // Redirect to dashboard
-    router.push("/dashboard")
+    performLoginRedirect()
   }
 
   const handleMagicLink = async () => {
     setIsMagicLoading(true)
     // Simulate magic link generation and login
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    await new Promise(resolve => setTimeout(resolve, 1200))
     
     setIsMagicLoading(false)
     toast({
@@ -56,7 +64,7 @@ export default function LoginPage() {
       description: "We've signed you in with your magic session.",
     })
     
-    router.push("/dashboard")
+    performLoginRedirect()
   }
 
   return (

@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useEffect, useState } from "react"
@@ -11,10 +10,11 @@ import {
   SelectContent, 
   SelectItem, 
   SelectTrigger, 
-  SelectValue 
+  SelectValue,
+  SelectSeparator
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
-import { Plus, Building2 } from "lucide-react"
+import { Plus, Building2, ChevronDown } from "lucide-react"
 import Link from "next/link"
 
 export default function DashboardLayout({
@@ -26,27 +26,33 @@ export default function DashboardLayout({
   const pathname = usePathname()
   const [businesses, setBusinesses] = useState<any[]>([])
   const [activeId, setActiveId] = useState<string>("")
+  const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(() => {
     const list = JSON.parse(localStorage.getItem("biz_list") || "[]")
-    const currentId = localStorage.getItem("active_biz_id") || ""
+    const currentId = localStorage.getItem("active_biz_id") || (list[0]?.id || "")
     
     setBusinesses(list)
     setActiveId(currentId)
+    setIsLoaded(true)
 
-    // Redirect if no businesses exist
+    // Redirect to setup if no businesses exist
     if (list.length === 0 && pathname !== "/setup") {
       router.push("/setup")
     }
   }, [pathname, router])
 
   const handleSwitch = (id: string) => {
+    if (id === "new_business") {
+      router.push("/setup")
+      return
+    }
     localStorage.setItem("active_biz_id", id)
     setActiveId(id)
-    // Force a reload or state sync for child components
-    window.dispatchEvent(new Event("storage"))
-    window.location.reload()
+    window.location.reload() // Refresh context for all components
   }
+
+  if (!isLoaded) return null
 
   return (
     <SidebarProvider>
@@ -59,28 +65,38 @@ export default function DashboardLayout({
               {businesses.length > 0 && (
                 <div className="flex items-center gap-2">
                   <Select value={activeId} onValueChange={handleSwitch}>
-                    <SelectTrigger className="w-[200px] h-9 bg-slate-50">
+                    <SelectTrigger className="w-[240px] h-10 bg-slate-50 border-slate-200 hover:bg-slate-100 transition-colors">
                       <div className="flex items-center gap-2 truncate">
-                        <Building2 size={14} className="text-primary" />
+                        <div className="size-6 rounded bg-primary/10 flex items-center justify-center">
+                          <Building2 size={12} className="text-primary" />
+                        </div>
                         <SelectValue placeholder="Select Business" />
                       </div>
                     </SelectTrigger>
                     <SelectContent>
                       {businesses.map((biz) => (
-                        <SelectItem key={biz.id} value={biz.id}>
-                          {biz.name}
+                        <SelectItem key={biz.id} value={biz.id} className="cursor-pointer">
+                          <span className="font-medium">{biz.name}</span>
                         </SelectItem>
                       ))}
+                      <SelectSeparator />
+                      <SelectItem value="new_business" className="cursor-pointer text-primary focus:text-primary focus:bg-primary/5">
+                        <div className="flex items-center gap-2 font-bold">
+                          <Plus size={14} />
+                          <span>Add New Business</span>
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full border border-dashed" asChild>
-                    <Link href="/setup"><Plus size={16} /></Link>
-                  </Button>
                 </div>
               )}
             </div>
             <div className="flex items-center gap-4">
-              <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-xs shadow-sm">
+              <div className="flex flex-col items-end mr-2">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-tighter">Pro Account</span>
+                <span className="text-sm font-medium">Jane Doe</span>
+              </div>
+              <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm shadow-md ring-2 ring-white">
                 JD
               </div>
             </div>
