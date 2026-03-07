@@ -27,7 +27,7 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-4">
             <Button variant="ghost" asChild>
-              <Link href="/dashboard">Log in</Link>
+              <Link href="/login">Log in</Link>
             </Button>
             <Button className="bg-primary hover:bg-primary/90" asChild>
               <Link href="/setup">Get Started</Link>
@@ -41,8 +41,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-8">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold tracking-wider uppercase">
-              <Sparkles className="size-3" />
-              The Future of Small Business
+              <span className="flex items-center gap-1"><Sparkles className="size-3" /> The Future of Small Business</span>
             </div>
             <h1 className="text-5xl md:text-6xl font-bold font-headline leading-tight text-slate-900">
               Your AI Website & Social Media Manager
@@ -110,14 +109,14 @@ export default function LandingPage() {
               <h2 className="text-3xl md:text-4xl font-bold font-headline leading-snug">Everything you need to succeed online</h2>
               <div className="space-y-4">
                 {[
-                  { title: "AI Website Builder", desc: "No coding required. Just describe your business." },
+                  { icon: Layout, title: "AI Website Builder", desc: "No coding required. Just describe your business." },
                   { icon: Share2, title: "Social Media Automation", desc: "Connect IG, FB, TikTok, and X easily." },
                   { icon: Globe, title: "Custom Domains", desc: "Look professional with your own .com address." },
                   { icon: CheckCircle2, title: "Built-in Analytics", desc: "Track your growth across all channels." }
                 ].map((feat, i) => (
                   <div key={i} className="flex gap-4 p-4 rounded-xl hover:bg-white hover:shadow-sm transition-all border border-transparent hover:border-border">
                     <div className="mt-1">
-                      <CheckCircle2 className="text-primary size-5" />
+                      <feat.icon className="text-primary size-5" />
                     </div>
                     <div>
                       <h4 className="font-bold text-lg">{feat.title}</h4>
