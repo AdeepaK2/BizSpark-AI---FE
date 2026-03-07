@@ -26,7 +26,6 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from "@/components/ui/dialog"
-import { generateSocialMediaContent, type GenerateSocialMediaContentOutput } from "@/ai/flows/generate-social-media-content"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 
@@ -34,7 +33,11 @@ export default function ProductsPage() {
   const { toast } = useToast()
   const [isAdding, setIsAdding] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [generatedContent, setGeneratedContent] = useState<GenerateSocialMediaContentOutput | null>(null)
+  const [generatedContent, setGeneratedContent] = useState<{
+    socialMediaCaption: string;
+    websiteContent: string;
+    hashtags: string[];
+  } | null>(null)
   
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -44,16 +47,17 @@ export default function ProductsPage() {
 
   const handleAddProduct = async () => {
     setIsGenerating(true)
+    // Simulating AI Generation locally for the prototype UI
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
     try {
-      const bizName = localStorage.getItem("biz_name") || "Our Business"
+      const mockContent = {
+        socialMediaCaption: `✨ NEW ARRIVAL ✨\n\nWe are so excited to introduce our new ${newProduct.name}! ${newProduct.description}.\n\nGet yours today for just ${newProduct.price}! 🛍️`,
+        websiteContent: `Welcome the latest addition to our catalog: ${newProduct.name}. \n\n${newProduct.description}.\n\nCrafted with care and designed for quality, this is exactly what your collection has been missing.`,
+        hashtags: ["newarrival", "smallbusiness", "quality", "spark", "musthave"]
+      }
       
-      const content = await generateSocialMediaContent({
-        businessName: bizName,
-        productName: newProduct.name,
-        description: newProduct.description,
-      })
-      
-      setGeneratedContent(content)
+      setGeneratedContent(mockContent)
       toast({
         title: "AI Analysis Complete",
         description: "We've generated social media posts and website updates for your new product.",
@@ -145,7 +149,7 @@ export default function ProductsPage() {
                 <div className="space-y-6">
                   <div className="space-y-3">
                     <h4 className="text-sm font-bold flex items-center gap-2"><Share2 size={16} className="text-primary"/> Social Media Caption</h4>
-                    <div className="p-4 bg-slate-50 rounded-lg text-sm italic border">
+                    <div className="p-4 bg-slate-50 rounded-lg text-sm italic border whitespace-pre-line">
                       {generatedContent.socialMediaCaption}
                     </div>
                     <div className="flex flex-wrap gap-2">
