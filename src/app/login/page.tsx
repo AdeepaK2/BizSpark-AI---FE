@@ -14,6 +14,7 @@ export default function LoginPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
+  const [isMagicLoading, setIsMagicLoading] = useState(false)
   const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -41,6 +42,20 @@ export default function LoginPage() {
     })
     
     // Redirect to dashboard
+    router.push("/dashboard")
+  }
+
+  const handleMagicLink = async () => {
+    setIsMagicLoading(true)
+    // Simulate magic link generation and login
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    
+    setIsMagicLoading(false)
+    toast({
+      title: "Magic Link Sent",
+      description: "We've signed you in with your magic session.",
+    })
+    
     router.push("/dashboard")
   }
 
@@ -96,7 +111,7 @@ export default function LoginPage() {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
-              <Button type="submit" className="w-full h-11" disabled={isLoading}>
+              <Button type="submit" className="w-full h-11" disabled={isLoading || isMagicLoading}>
                 {isLoading ? <Loader2 className="animate-spin mr-2" /> : "Sign In"}
               </Button>
               <div className="relative w-full">
@@ -107,8 +122,19 @@ export default function LoginPage() {
                   <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
                 </div>
               </div>
-              <Button variant="outline" className="w-full h-11" type="button">
-                <Sparkles size={16} className="mr-2 text-primary" /> Magic Link
+              <Button 
+                variant="outline" 
+                className="w-full h-11" 
+                type="button" 
+                onClick={handleMagicLink}
+                disabled={isLoading || isMagicLoading}
+              >
+                {isMagicLoading ? (
+                  <Loader2 className="animate-spin mr-2" />
+                ) : (
+                  <Sparkles size={16} className="mr-2 text-primary" />
+                )}
+                Magic Link
               </Button>
             </CardFooter>
           </form>
