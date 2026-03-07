@@ -10,7 +10,7 @@ import {
   Package, 
   Settings, 
   Zap,
-  Building2,
+  Users,
   Sparkles
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -30,6 +30,7 @@ const menuItems = [
   { icon: Globe, label: "My Website", href: "/dashboard/website" },
   { icon: Share2, label: "Social Media", href: "/dashboard/social" },
   { icon: Package, label: "Products", href: "/dashboard/products" },
+  { icon: Users, label: "Team Management", href: "/dashboard/team" },
   { icon: Settings, label: "Domains", href: "/dashboard/domains" },
 ]
 
