@@ -2,12 +2,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { 
-  Globe, 
-  Share2, 
-  Eye, 
-  ArrowUpRight, 
-  TrendingUp, 
+import {
+  Globe,
+  Share2,
+  Eye,
+  ArrowUpRight,
+  TrendingUp,
   Calendar,
   Sparkles
 } from "lucide-react"
@@ -15,15 +15,24 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
+import { apiClient } from "@/lib/api-client"
 
 export default function DashboardOverview() {
   const [activeBiz, setActiveBiz] = useState<any>(null)
 
   useEffect(() => {
-    const list = JSON.parse(localStorage.getItem("biz_list") || "[]")
-    const activeId = localStorage.getItem("active_biz_id")
-    const current = list.find((b: any) => b.id === activeId)
-    if (current) setActiveBiz(current)
+    const fetchBiz = async () => {
+      const activeId = localStorage.getItem("active_biz_id")
+      if (activeId) {
+        try {
+          const res = await apiClient.get(`/business/${activeId}`)
+          setActiveBiz(res.data)
+        } catch (e) {
+          console.error(e)
+        }
+      }
+    }
+    fetchBiz()
   }, [])
 
   if (!activeBiz) return null
@@ -82,7 +91,7 @@ export default function DashboardOverview() {
                 <span className="text-xs font-medium text-green-600">Active</span>
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>SEO Optimization</span>

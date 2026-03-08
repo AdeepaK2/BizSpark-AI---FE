@@ -30,7 +30,7 @@ export default function LandingPage() {
               <Link href="/login">Log in</Link>
             </Button>
             <Button className="bg-primary hover:bg-primary/90" asChild>
-              <Link href="/setup">Get Started</Link>
+              <Link href="/signup">Get Started</Link>
             </Button>
           </div>
         </div>
@@ -51,7 +51,7 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button size="lg" className="bg-primary hover:bg-primary/90 text-lg h-14 px-8" asChild>
-                <Link href="/setup">
+                <Link href="/signup">
                   Start Your Business Spark <ArrowRight className="ml-2" />
                 </Link>
               </Button>
@@ -63,10 +63,10 @@ export default function LandingPage() {
           <div className="relative">
             <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 to-accent/20 blur-3xl rounded-full opacity-50"></div>
             <div className="relative rounded-2xl overflow-hidden shadow-2xl border bg-white">
-              <Image 
-                src={heroImage?.imageUrl || "https://picsum.photos/seed/biz1/1200/800"} 
-                width={1200} 
-                height={800} 
+              <Image
+                src={heroImage?.imageUrl || "https://picsum.photos/seed/biz1/1200/800"}
+                width={1200}
+                height={800}
                 alt="BizSpark Dashboard"
                 className="w-full h-auto"
                 data-ai-hint="small business"
@@ -127,10 +127,10 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="bg-white p-8 rounded-3xl shadow-xl border relative overflow-hidden">
-               <Image 
-                src="https://picsum.photos/seed/dash2/800/600" 
-                width={800} 
-                height={600} 
+              <Image
+                src="https://picsum.photos/seed/dash2/800/600"
+                width={800}
+                height={600}
                 alt="Product Dashboard"
                 className="rounded-xl border shadow-sm"
                 data-ai-hint="saas dashboard"

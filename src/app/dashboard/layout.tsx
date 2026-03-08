@@ -5,17 +5,18 @@ import { useRouter, usePathname } from "next/navigation"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
 import { Toaster } from "@/components/ui/toaster"
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
   SelectValue,
   SelectSeparator
 } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Plus, Building2, ChevronDown } from "lucide-react"
 import Link from "next/link"
+import { apiClient } from "@/lib/api-client"
 
 export default function DashboardLayout({
   children,
@@ -27,21 +28,42 @@ export default function DashboardLayout({
   const [businesses, setBusinesses] = useState<any[]>([])
   const [activeId, setActiveId] = useState<string>("")
   const [isLoaded, setIsLoaded] = useState(false)
+  const [currentUser, setCurrentUser] = useState<any>(null)
 
   useEffect(() => {
-    const list = JSON.parse(localStorage.getItem("biz_list") || "[]")
-    const currentId = localStorage.getItem("active_biz_id") || (list[0]?.id || "")
-    
-    setBusinesses(list)
-    setActiveId(currentId)
-    setIsLoaded(true)
-
-    // Redirect to setup if no businesses exist
-    if (list.length === 0 && pathname !== "/setup") {
-      router.push("/setup")
+    // Also load user info
+    if (typeof window !== "undefined") {
+      const userStr = localStorage.getItem("current_user")
+      if (userStr) setCurrentUser(JSON.parse(userStr))
     }
-  }, [pathname, router])
 
+    const fetchBusinesses = async () => {
+      try {
+        const res = await apiClient.get('/business')
+        const list = res.data || []
+        setBusinesses(list)
+
+        if (list.length === 0 && pathname !== "/setup") {
+          router.push("/setup")
+          return
+        }
+
+        if (list.length > 0) {
+          let currentId = localStorage.getItem("active_biz_id") || ""
+          if (!currentId || !list.find((b: any) => b.id === currentId)) {
+            currentId = list[0].id
+            localStorage.setItem("active_biz_id", currentId)
+          }
+          setActiveId(currentId)
+        }
+        setIsLoaded(true)
+      } catch (e) {
+        router.push("/login")
+      }
+    }
+
+    fetchBusinesses()
+  }, [pathname, router])
   const handleSwitch = (id: string) => {
     if (id === "new_business") {
       router.push("/setup")
@@ -94,10 +116,10 @@ export default function DashboardLayout({
             <div className="flex items-center gap-4">
               <div className="flex flex-col items-end mr-2">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-tighter">Pro Account</span>
-                <span className="text-sm font-medium">Jane Doe</span>
+                <span className="text-sm font-medium">{currentUser?.name || "User"}</span>
               </div>
               <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm shadow-md ring-2 ring-white">
-                JD
+                {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : "U"}
               </div>
             </div>
           </header>

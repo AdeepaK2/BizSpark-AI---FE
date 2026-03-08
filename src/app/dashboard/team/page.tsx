@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { 
-  Users, 
-  UserPlus, 
-  MoreVertical, 
-  ShieldCheck, 
-  ShieldAlert, 
+import {
+  Users,
+  UserPlus,
+  MoreVertical,
+  ShieldCheck,
+  ShieldAlert,
   User,
   Mail,
   Loader2,
@@ -16,32 +16,33 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table"
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
 } from "@/components/ui/dialog"
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { apiClient } from "@/lib/api-client"
 
 type Role = "Owner" | "Admin" | "Editor" | "Viewer"
 
@@ -69,10 +70,19 @@ export default function TeamManagementPage() {
   ])
 
   useEffect(() => {
-    const list = JSON.parse(localStorage.getItem("biz_list") || "[]")
-    const activeId = localStorage.getItem("active_biz_id")
-    const current = list.find((b: any) => b.id === activeId)
-    if (current) setActiveBiz(current)
+    const fetchBiz = async () => {
+      const activeId = localStorage.getItem("active_biz_id")
+      if (activeId) {
+        try {
+          const res = await apiClient.get(`/business/${activeId}`)
+          setActiveBiz(res.data)
+        } catch (e) {
+          console.error(e)
+        }
+      }
+    }
+
+    fetchBiz()
   }, [])
 
   const handleInvite = async () => {
@@ -94,7 +104,7 @@ export default function TeamManagementPage() {
     setIsSending(false)
     setIsInviting(false)
     setInviteEmail("")
-    
+
     toast({
       title: "Invitation Sent",
       description: `An invite has been sent to ${inviteEmail}.`,
@@ -136,8 +146,8 @@ export default function TeamManagementPage() {
                 <label className="text-sm font-medium">Email Address</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 size-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="teammate@example.com" 
+                  <Input
+                    placeholder="teammate@example.com"
                     className="pl-10"
                     value={inviteEmail}
                     onChange={e => setInviteEmail(e.target.value)}

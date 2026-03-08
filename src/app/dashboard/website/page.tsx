@@ -1,39 +1,140 @@
 
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Monitor, Smartphone, Globe, ExternalLink, RefreshCw, Sparkles, Check } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
+import { apiClient } from "@/lib/api-client"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { useToast } from "@/hooks/use-toast"
+import { Store, Upload } from "lucide-react"
 
 export default function WebsiteManagement() {
+  const { toast } = useToast()
   const [activeBiz, setActiveBiz] = useState<any>(null)
   const [view, setView] = useState("desktop")
   const [isPublishing, setIsPublishing] = useState(false)
-  const [isPublished, setIsPublished] = useState(true)
+  const [isPublished, setIsPublished] = useState(false)
+  const [deployStatus, setDeployStatus] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+
+  const pollingIntervalObj = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    const list = JSON.parse(localStorage.getItem("biz_list") || "[]")
-    const activeId = localStorage.getItem("active_biz_id")
-    const current = list.find((b: any) => b.id === activeId)
-    if (current) {
-      setActiveBiz(current)
-    } else {
+    return () => {
+      // Cleanup interval if unmounting
+      if (pollingIntervalObj.current) clearInterval(pollingIntervalObj.current)
+    }
+  }, [])
+
+  const [templates, setTemplates] = useState<any[]>([])
+  const [templateId, setTemplateId] = useState<string>("")
+  const [cmsData, setCmsData] = useState<Record<string, any>>({})
+
+  useEffect(() => {
+    const fetchBiz = async () => {
+      const activeId = localStorage.getItem("active_biz_id")
+      if (activeId) {
+        try {
+          const res = await apiClient.get(`/business/${activeId}`)
+          if (res.data) {
+            setActiveBiz(res.data)
+            if (res.data.websites && res.data.websites.length > 0) {
+              const website = res.data.websites[0]
+              setTemplateId(website.templateId)
+              setCmsData(website.cmsData || {})
+            }
+            return
+          }
+        } catch (e) {
+          console.error(e)
+        }
+      }
+
       setActiveBiz({
         name: "My Business",
         html: `<div style="padding: 40px; text-align: center;"><h1>No website found.</h1></div>`
       })
     }
+    fetchBiz()
+
+    const fetchTemplates = async () => {
+      try {
+        const res = await apiClient.get('/templates')
+        if (res.data) setTemplates(res.data)
+      } catch (e) {
+        console.error("Failed to load templates", e)
+      }
+    }
+    fetchTemplates()
   }, [])
 
-  const handlePublish = () => {
+  const handleSaveConfig = async () => {
+    setIsSaving(true)
+    try {
+      await apiClient.post(`/business/${activeBiz.id}/website`, {
+        templateId,
+        cmsData
+      })
+      toast({ title: "Configuration Saved", description: "Your Website Data has been saved securely to the database." })
+    } catch (e: any) {
+      toast({ title: "Failed to save", variant: "destructive" })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const pollTaskStatus = (taskId: string) => {
     setIsPublishing(true)
-    setTimeout(() => {
+    setDeployStatus("QUEUED")
+
+    pollingIntervalObj.current = setInterval(async () => {
+      try {
+        const res = await apiClient.get(`/agents/tasks/${taskId}`)
+        if (res.data) {
+          const status = res.data.status
+          setDeployStatus(status)
+
+          if (status === 'COMPLETED' || status === 'FAILED') {
+            if (pollingIntervalObj.current) clearInterval(pollingIntervalObj.current)
+            setIsPublishing(false)
+            setIsPublished(status === 'COMPLETED')
+
+            if (status === 'COMPLETED') {
+              toast({ title: "Build Complete!", description: "AI generation has finished successfully." })
+            } else {
+              toast({ title: "Build Failed", description: "AI generation encountered an error.", variant: "destructive" })
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Polling error", e)
+      }
+    }, 1000)
+  }
+
+  const handlePublish = async () => {
+    setIsPublishing(true)
+    try {
+      const deployRes = await apiClient.post(`/business/${activeBiz.id}/website/deploy`, {})
+      const taskId = deployRes.data?.taskId
+
+      if (taskId) {
+        toast({ title: "Build Started!", description: "AI is generating your website on the server." })
+        pollTaskStatus(taskId)
+      } else {
+        toast({ title: "Build Started", description: "Deployment triggered, but could not track task status." })
+        setIsPublishing(false)
+        setIsPublished(true)
+      }
+    } catch (e: any) {
+      toast({ title: "Deployment failed", variant: "destructive" })
       setIsPublishing(false)
-      setIsPublished(true)
-    }, 1500)
+    }
   }
 
   if (!activeBiz) return null
@@ -49,12 +150,16 @@ export default function WebsiteManagement() {
           <Button variant="outline" className="gap-2">
             <RefreshCw size={16} /> Regenerate
           </Button>
-          <Button 
+          <Button
             className={cn("gap-2 min-w-[120px]", isPublished ? "bg-green-600 hover:bg-green-700" : "bg-primary")}
             onClick={handlePublish}
             disabled={isPublishing}
           >
-            {isPublishing ? "Publishing..." : isPublished ? <><Check size={16}/> Published</> : "Publish Changes"}
+            {isPublishing ? (
+              <><RefreshCw size={16} className="animate-spin" /> {deployStatus === 'PROCESSING' ? 'Building...' : deployStatus === 'QUEUED' ? 'Queued...' : 'Publishing...'}</>
+            ) : isPublished ? (
+              <><Check size={16} /> Published!</>
+            ) : "Publish Changes"}
           </Button>
         </div>
       </div>
@@ -84,15 +189,15 @@ export default function WebsiteManagement() {
               </div>
             </CardHeader>
             <CardContent className="p-0 flex-1 bg-slate-100 flex justify-center overflow-auto">
-              <div 
+              <div
                 className={cn(
                   "bg-white transition-all duration-300 shadow-2xl my-8",
                   view === "desktop" ? "w-full max-w-5xl" : "w-[375px]"
                 )}
                 style={{ minHeight: "100%" }}
               >
-                <iframe 
-                  srcDoc={activeBiz.html} 
+                <iframe
+                  srcDoc={activeBiz.html}
                   className="w-full h-full border-none"
                   style={{ minHeight: "800px" }}
                 />
@@ -105,26 +210,81 @@ export default function WebsiteManagement() {
           <Card>
             <CardHeader>
               <CardTitle>Configuration</CardTitle>
-              <CardDescription>Site details for {activeBiz.name}.</CardDescription>
+              <CardDescription>Select a layout and modify content.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Site Title</label>
-                <input className="w-full p-2 border rounded-md text-sm" defaultValue={activeBiz.name} />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Subdomain</label>
-                <div className="flex gap-2">
-                  <div className="flex-1 p-2 border bg-slate-50 rounded-md text-sm text-muted-foreground truncate">
-                    {activeBiz.name.toLowerCase().replace(/\s/g, "")}.bizspark.ai
-                  </div>
+            <CardContent className="space-y-4 max-h-[600px] overflow-auto">
+              <div className="space-y-2 mb-6">
+                <div className="flex justify-between items-center">
+                  <Label>Select Template</Label>
+                  <Button variant="ghost" size="sm" onClick={handleSaveConfig} disabled={isSaving || !templateId} className="h-8 text-xs font-medium text-primary">
+                    {isSaving ? "Saving..." : "Save Draft"}
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-2 border bg-slate-50 p-2 rounded-lg">
+                  {templates.map(tpl => (
+                    <div
+                      key={tpl.id}
+                      onClick={() => setTemplateId(tpl.id)}
+                      className={cn("p-3 rounded border text-center cursor-pointer text-xs font-bold transition-all", templateId === tpl.id ? "bg-primary text-white border-primary" : "bg-white text-slate-500 hover:border-primary")}
+                    >
+                      <div className="flex justify-center mb-1">
+                        {tpl.type === 'ECOMMERCE_ITEM' ? <Store size={14} /> : <Sparkles size={14} />}
+                      </div>
+                      {tpl.name}
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div className="pt-4 border-t">
-                <Button className="w-full bg-primary/10 text-primary hover:bg-primary hover:text-white border-primary/20">
-                  <Sparkles size={16} className="mr-2" /> AI Assistant
-                </Button>
-              </div>
+
+              {templateId && templates.find(t => t.id === templateId)?.cmsSchema?.sections?.map((section: any) => (
+                <div key={section.id} className="space-y-3 p-4 bg-slate-50 border rounded-xl">
+                  <h4 className="text-sm font-bold border-b pb-1">{section.label}</h4>
+                  <div className="space-y-4">
+                    {section.fields?.map((field: any) => (
+                      <div key={field.key} className="space-y-1">
+                        <Label className="text-xs">{field.label}</Label>
+                        {field.type === 'TEXT' && (
+                          <Input
+                            className="h-8 text-xs"
+                            placeholder={field.defaultValue || ""}
+                            value={cmsData[`${section.id}.${field.key}`] || ""}
+                            onChange={e => setCmsData({
+                              ...cmsData,
+                              [`${section.id}.${field.key}`]: e.target.value
+                            })}
+                          />
+                        )}
+                        {field.type === 'COLOR' && (
+                          <div className="flex gap-2 items-center">
+                            <input
+                              type="color"
+                              className="size-6 rounded cursor-pointer"
+                              value={cmsData[`${section.id}.${field.key}`] || field.defaultValue || "#000000"}
+                              onChange={e => setCmsData({
+                                ...cmsData,
+                                [`${section.id}.${field.key}`]: e.target.value
+                              })}
+                            />
+                          </div>
+                        )}
+                        {field.type === 'IMAGE_URL' && (
+                          <div className="flex gap-1">
+                            <Input
+                              className="h-8 text-xs"
+                              placeholder="URL..."
+                              value={cmsData[`${section.id}.${field.key}`] || ""}
+                              onChange={e => setCmsData({
+                                ...cmsData,
+                                [`${section.id}.${field.key}`]: e.target.value
+                              })}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </div>
