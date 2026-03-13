@@ -2,10 +2,10 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { Monitor, Smartphone, Globe, ExternalLink, RefreshCw, Sparkles, Check } from "lucide-react"
+import { Monitor, Smartphone, Globe, ExternalLink, RefreshCw, Sparkles, Check, Wand2, Sparkle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import { apiClient } from "@/lib/api-client"
 import { Input } from "@/components/ui/input"
@@ -21,6 +21,8 @@ export default function WebsiteManagement() {
   const [isPublished, setIsPublished] = useState(false)
   const [deployStatus, setDeployStatus] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [stepIndex, setStepIndex] = useState(0)
+  const [completedSetup, setCompletedSetup] = useState(false)
 
   const pollingIntervalObj = useRef<NodeJS.Timeout | null>(null)
 
@@ -81,8 +83,10 @@ export default function WebsiteManagement() {
         cmsData
       })
       toast({ title: "Configuration Saved", description: "Your Website Data has been saved securely to the database." })
+      return true
     } catch (e: any) {
       toast({ title: "Failed to save", variant: "destructive" })
+      return false
     } finally {
       setIsSaving(false)
     }
@@ -121,7 +125,7 @@ export default function WebsiteManagement() {
     setIsPublishing(true)
     try {
       const deployRes = await apiClient.post(`/business/${activeBiz.id}/website/deploy`, {})
-      const taskId = deployRes.data?.taskId
+      const taskId = deployRes?.data?.taskId || deployRes?.data?.data?.taskId
 
       if (taskId) {
         toast({ title: "Build Started!", description: "AI is generating your website on the server." })
@@ -138,6 +142,243 @@ export default function WebsiteManagement() {
   }
 
   if (!activeBiz) return null
+
+  const steps = [
+    {
+      id: "template",
+      title: "Choose a template",
+      description: "Pick a starting layout that fits your business."
+    },
+    {
+      id: "brand",
+      title: "Branding",
+      description: "Set your primary colors and look & feel."
+    },
+    {
+      id: "content",
+      title: "Content",
+      description: "Add your headline, about, and core sections."
+    },
+    {
+      id: "media",
+      title: "Images",
+      description: "Upload or link images for your site."
+    },
+    {
+      id: "review",
+      title: "Review & publish",
+      description: "Preview the site and publish when ready."
+    }
+  ]
+
+  const selectedTemplate = templates.find(t => t.id === templateId)
+  const primaryWebsite = Array.isArray(activeBiz.websites) ? activeBiz.websites[0] : null
+  const hasStoredConfiguration = !!(primaryWebsite?.templateId && String(primaryWebsite.templateId).trim().length > 0)
+  const sections = selectedTemplate?.cmsSchema?.sections || []
+  const step = steps[stepIndex]?.id || "template"
+  const isFirstStep = stepIndex === 0
+  const isLastStep = stepIndex === steps.length - 1
+  const needsOnboarding = !hasStoredConfiguration && !completedSetup
+
+  const fieldTypesByStep: Record<string, string[]> = {
+    brand: ["COLOR"],
+    content: ["TEXT"],
+    media: ["IMAGE_URL"]
+  }
+
+  const getSectionFields = (section: any) => {
+    if (!section?.fields?.length) return []
+    const types = fieldTypesByStep[step] || []
+    if (!types.length) return []
+    return section.fields.filter((field: any) => types.includes(field.type))
+  }
+
+  if (needsOnboarding) {
+    return (
+      <div className="h-full flex flex-col space-y-6">
+        <div>
+          <h2 className="text-3xl font-bold font-headline">Create your website</h2>
+          <p className="text-muted-foreground mt-1">
+            Let’s set up your site in a few simple steps. You can edit everything later.
+          </p>
+        </div>
+
+        <Card className="border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wand2 size={18} /> Step {stepIndex + 1} of {steps.length}: {steps[stepIndex]?.title}
+            </CardTitle>
+            <CardDescription>{steps[stepIndex]?.description}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="h-2 flex-1 rounded-full bg-slate-100">
+                <div
+                  className="h-2 rounded-full bg-primary transition-all"
+                  style={{ width: `${((stepIndex + 1) / steps.length) * 100}%` }}
+                />
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {stepIndex + 1}/{steps.length}
+              </div>
+            </div>
+
+            {step === "template" && (
+              <div className="space-y-3">
+                <Label>Select Template</Label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 border bg-slate-50 p-2 rounded-lg">
+                  {templates.map(tpl => (
+                    <div
+                      key={tpl.id}
+                      onClick={() => setTemplateId(tpl.id)}
+                      className={cn(
+                        "p-3 rounded border text-center cursor-pointer text-xs font-bold transition-all",
+                        templateId === tpl.id ? "bg-primary text-white border-primary" : "bg-white text-slate-500 hover:border-primary"
+                      )}
+                    >
+                      <div className="flex justify-center mb-1">
+                        {tpl.type === 'ECOMMERCE_ITEM' ? <Store size={14} /> : <Sparkles size={14} />}
+                      </div>
+                      {tpl.name}
+                    </div>
+                  ))}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  You can switch templates later without losing your content.
+                </div>
+              </div>
+            )}
+
+            {["brand", "content", "media"].includes(step) && (
+              <div className="space-y-4">
+                {!templateId && (
+                  <div className="rounded-lg border bg-slate-50 p-3 text-xs text-slate-600">
+                    Choose a template first to unlock editable sections.
+                  </div>
+                )}
+                {templateId && sections.length === 0 && (
+                  <div className="rounded-lg border bg-slate-50 p-3 text-xs text-slate-600">
+                    This template doesn’t expose editable fields yet.
+                  </div>
+                )}
+                {templateId && sections.map((section: any) => {
+                  const fields = getSectionFields(section)
+                  if (!fields.length) return null
+                  return (
+                    <div key={section.id} className="space-y-3 p-4 bg-slate-50 border rounded-xl">
+                      <h4 className="text-sm font-bold border-b pb-1">{section.label}</h4>
+                      <div className="space-y-4">
+                        {fields.map((field: any) => (
+                          <div key={field.key} className="space-y-1">
+                            <Label className="text-xs">{field.label}</Label>
+                            {field.type === 'TEXT' && (
+                              <Input
+                                className="h-8 text-xs"
+                                placeholder={field.defaultValue || ""}
+                                value={cmsData[`${section.id}.${field.key}`] || ""}
+                                onChange={e => setCmsData({
+                                  ...cmsData,
+                                  [`${section.id}.${field.key}`]: e.target.value
+                                })}
+                              />
+                            )}
+                            {field.type === 'COLOR' && (
+                              <div className="flex gap-2 items-center">
+                                <input
+                                  type="color"
+                                  className="size-6 rounded cursor-pointer"
+                                  value={cmsData[`${section.id}.${field.key}`] || field.defaultValue || "#000000"}
+                                  onChange={e => setCmsData({
+                                    ...cmsData,
+                                    [`${section.id}.${field.key}`]: e.target.value
+                                  })}
+                                />
+                                <Input
+                                  className="h-8 text-xs"
+                                  value={cmsData[`${section.id}.${field.key}`] || field.defaultValue || "#000000"}
+                                  onChange={e => setCmsData({
+                                    ...cmsData,
+                                    [`${section.id}.${field.key}`]: e.target.value
+                                  })}
+                                />
+                              </div>
+                            )}
+                            {field.type === 'IMAGE_URL' && (
+                              <div className="flex gap-1">
+                                <Input
+                                  className="h-8 text-xs"
+                                  placeholder="Paste image URL..."
+                                  value={cmsData[`${section.id}.${field.key}`] || ""}
+                                  onChange={e => setCmsData({
+                                    ...cmsData,
+                                    [`${section.id}.${field.key}`]: e.target.value
+                                  })}
+                                />
+                                <Button variant="outline" size="icon" className="shrink-0" aria-label="Upload image">
+                                  <Upload size={14} />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {step === "review" && (
+              <div className="space-y-4">
+                <div className="rounded-xl border bg-slate-50 p-4">
+                  <div className="text-sm font-semibold">Ready to generate your site?</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    We’ll save your configuration and our agent will build the website.
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="rounded-lg border p-3">
+                    <div className="text-muted-foreground">Template</div>
+                    <div className="font-semibold mt-1">{selectedTemplate?.name || "Not selected"}</div>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <div className="text-muted-foreground">Content fields</div>
+                    <div className="font-semibold mt-1">
+                      {sections.reduce((acc: number, s: any) => acc + (s.fields?.length || 0), 0)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+          <div className="border-t px-6 py-4 flex items-center justify-between">
+            <Button variant="outline" onClick={() => setStepIndex(Math.max(0, stepIndex - 1))} disabled={isFirstStep}>
+              Back
+            </Button>
+            {!isLastStep && (
+              <Button onClick={() => setStepIndex(Math.min(steps.length - 1, stepIndex + 1))}>
+                Next step
+              </Button>
+            )}
+            {isLastStep && (
+              <Button
+                onClick={async () => {
+                  const ok = await handleSaveConfig()
+                  if (ok) {
+                    setCompletedSetup(true)
+                    await handlePublish()
+                  }
+                }}
+                disabled={isSaving || !templateId}
+              >
+                {isSaving ? "Saving..." : "Save & generate website"}
+              </Button>
+            )}
+          </div>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="h-full flex flex-col space-y-8">
@@ -163,6 +404,13 @@ export default function WebsiteManagement() {
           </Button>
         </div>
       </div>
+
+      {isPublishing && (
+        <div className="rounded-xl border bg-slate-50 p-4 text-sm text-slate-700 flex items-center gap-2">
+          <Sparkle size={16} className="text-primary" />
+          Our agent is creating your website. This can take a couple of minutes.
+        </div>
+      )}
 
       <div className="grid grid-cols-12 gap-8 flex-1">
         <div className="col-span-12 lg:col-span-8 space-y-4 flex flex-col">
@@ -208,24 +456,33 @@ export default function WebsiteManagement() {
 
         <div className="col-span-12 lg:col-span-4 space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Configuration</CardTitle>
-              <CardDescription>Select a layout and modify content.</CardDescription>
+            <CardHeader className="flex flex-row items-start justify-between gap-3">
+              <div>
+                <CardTitle>Configuration</CardTitle>
+                <CardDescription>Update template and content.</CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSaveConfig}
+                disabled={isSaving || !templateId}
+                className="h-8 text-xs font-medium text-primary"
+              >
+                {isSaving ? "Saving..." : "Save Draft"}
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4 max-h-[600px] overflow-auto">
-              <div className="space-y-2 mb-6">
-                <div className="flex justify-between items-center">
-                  <Label>Select Template</Label>
-                  <Button variant="ghost" size="sm" onClick={handleSaveConfig} disabled={isSaving || !templateId} className="h-8 text-xs font-medium text-primary">
-                    {isSaving ? "Saving..." : "Save Draft"}
-                  </Button>
-                </div>
+              <div className="space-y-3">
+                <Label>Select Template</Label>
                 <div className="grid grid-cols-2 gap-2 border bg-slate-50 p-2 rounded-lg">
                   {templates.map(tpl => (
                     <div
                       key={tpl.id}
                       onClick={() => setTemplateId(tpl.id)}
-                      className={cn("p-3 rounded border text-center cursor-pointer text-xs font-bold transition-all", templateId === tpl.id ? "bg-primary text-white border-primary" : "bg-white text-slate-500 hover:border-primary")}
+                      className={cn(
+                        "p-3 rounded border text-center cursor-pointer text-xs font-bold transition-all",
+                        templateId === tpl.id ? "bg-primary text-white border-primary" : "bg-white text-slate-500 hover:border-primary"
+                      )}
                     >
                       <div className="flex justify-center mb-1">
                         {tpl.type === 'ECOMMERCE_ITEM' ? <Store size={14} /> : <Sparkles size={14} />}
@@ -236,7 +493,17 @@ export default function WebsiteManagement() {
                 </div>
               </div>
 
-              {templateId && templates.find(t => t.id === templateId)?.cmsSchema?.sections?.map((section: any) => (
+              {!templateId && (
+                <div className="rounded-lg border bg-slate-50 p-3 text-xs text-slate-600">
+                  Select a template to edit website fields.
+                </div>
+              )}
+              {templateId && sections.length === 0 && (
+                <div className="rounded-lg border bg-slate-50 p-3 text-xs text-slate-600">
+                  This template doesn’t expose editable fields yet.
+                </div>
+              )}
+              {templateId && sections.map((section: any) => (
                 <div key={section.id} className="space-y-3 p-4 bg-slate-50 border rounded-xl">
                   <h4 className="text-sm font-bold border-b pb-1">{section.label}</h4>
                   <div className="space-y-4">
@@ -265,19 +532,30 @@ export default function WebsiteManagement() {
                                 [`${section.id}.${field.key}`]: e.target.value
                               })}
                             />
+                            <Input
+                              className="h-8 text-xs"
+                              value={cmsData[`${section.id}.${field.key}`] || field.defaultValue || "#000000"}
+                              onChange={e => setCmsData({
+                                ...cmsData,
+                                [`${section.id}.${field.key}`]: e.target.value
+                              })}
+                            />
                           </div>
                         )}
                         {field.type === 'IMAGE_URL' && (
                           <div className="flex gap-1">
                             <Input
                               className="h-8 text-xs"
-                              placeholder="URL..."
+                              placeholder="Paste image URL..."
                               value={cmsData[`${section.id}.${field.key}`] || ""}
                               onChange={e => setCmsData({
                                 ...cmsData,
                                 [`${section.id}.${field.key}`]: e.target.value
                               })}
                             />
+                            <Button variant="outline" size="icon" className="shrink-0" aria-label="Upload image">
+                              <Upload size={14} />
+                            </Button>
                           </div>
                         )}
                       </div>
